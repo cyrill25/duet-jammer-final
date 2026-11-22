@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mosquito Sound Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: quiet and exact, a companion to the Duet Jammer
+   IDEA: a specimen drawer of wingbeat recordings, each one a labelled tray
+   PICTURE: live spectrum of what is playing, with female, male and harmonic marks
+   COLOUR and TYPE: warm white or night ink, blood-crimson accent; Cormorant Garamond, IBM Plex Sans
+   LAYOUT: title, scope, temperature, sound trays, notes */
+:root{color-scheme:light dark;--bg:light-dark(#f3f2ee,#111015);--ink:light-dark(#17161b,#ecebe6);--mute:light-dark(#605e67,#a3a1aa);--line:light-dark(#d8d5ce,#2d2b34);--card:light-dark(rgba(250,249,246,.86),rgba(24,22,29,.84));--acc:light-dark(#17161b,#ecebe6);--onacc:light-dark(#f3f2ee,#111015);--crim:light-dark(#a3142f,#e0526f);--panel:#16141b;--pink:#e46a88;--teal:#62b6b2;--gold:#d8b25e;--pi:#ecebe6;--pm:#a3a1aa}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
+.mozzie{position:fixed;z-index:0;pointer-events:none;top:-2vh;right:-4vw;width:min(56vw,640px);height:auto;color:var(--ink);opacity:.11;transform:rotate(-18deg)}
+@media(max-width:700px){.mozzie{width:96vw;right:-30vw;top:-1vh;opacity:.09}}
+.mozzie *{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.mozzie .fine{stroke-width:.9}.mozzie .band{stroke-dasharray:9 6}
+.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:clamp(22px,4vw,52px) max(4vw,16px) 56px}
+h1{font:600 clamp(38px,6.5vw,60px)/1 "Cormorant Garamond",Georgia,serif;margin:0}
+.species{font:italic 500 clamp(19px,2.6vw,23px)/1.3 "Cormorant Garamond",Georgia,serif;color:var(--mute);margin:8px 0 14px}
+.species em{color:var(--crim)}
+.rule{height:1px;background:var(--line);margin:0 0 14px;max-width:560px}
+.lede{color:var(--mute);margin:0 0 24px;max-width:60ch;font-size:15px}
+h2{font:600 24px/1.2 "Cormorant Garamond",Georgia,serif;margin:0 0 12px}
+.scope{background:var(--panel);color:var(--pi);border:1px solid #2a2732;border-radius:14px;padding:18px}
+.now{display:flex;gap:12px;align-items:center;font:600 clamp(22px,4.4vw,30px)/1.15 "Cormorant Garamond",Georgia,serif;min-height:1.6em}
+.dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--pm)}
+.playing .dot{background:var(--crim)}
+@media(prefers-reduced-motion:no-preference){.playing .dot{animation:p .6s ease-in-out infinite alternate}@keyframes p{to{transform:scale(1.6);opacity:.55}}}
+.sub{color:var(--pm);font-size:14px;margin:4px 0 8px;min-height:1.4em}
+.fig{position:relative;height:220px;margin:4px -4px 0}
+@media(min-width:700px){.fig{height:280px}}
+.fig>canvas{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--pm);margin:10px 0 4px}
+.legend i{display:inline-block;width:14px;height:2px;vertical-align:4px;margin-right:7px}
+.prog{height:2px;background:#2e2b37;margin-top:12px}.prog b{display:block;height:100%;width:0;background:var(--crim)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;backdrop-filter:blur(2px);margin-top:18px}
+.lab{font-size:13px;color:var(--mute);margin:0 0 6px}
+input[type=range]{width:100%;accent-color:var(--crim);height:32px}
+.tval{font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
+.tval b{font:600 22px "Cormorant Garamond",Georgia,serif;color:var(--ink)}
+.two{display:grid;gap:18px}
+@media(min-width:760px){.two{grid-template-columns:1.4fr 1fr}}
+.trays{display:grid;gap:12px;margin-top:18px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.tray{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px;display:flex;flex-direction:column;gap:6px;backdrop-filter:blur(2px)}
+.tray.on{border-color:var(--crim);box-shadow:inset 0 0 0 1px var(--crim)}
+.tray h3{font:600 22px/1.15 "Cormorant Garamond",Georgia,serif;margin:0}
+.tray p{margin:0;font-size:14px;color:var(--mute)}
+.hz{font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.play{margin-top:auto;align-self:flex-start;font:inherit;font-size:15px;min-height:44px;padding:0 20px;border-radius:999px;border:1px solid var(--acc);background:transparent;color:var(--ink);cursor:pointer}
+.tray.on .play{background:var(--crim);border-color:var(--crim);color:#fff}
+.stopall{font:inherit;font-size:15px;min-height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--acc);color:var(--onacc);cursor:pointer;margin-top:12px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--crim);outline-offset:2px}
+.note{font-size:14px;color:var(--mute);margin:8px 0 0}
+ol{margin:0;padding-left:1.3em}li{margin:6px 0}
+.foot{font:italic 16px "Cormorant Garamond",Georgia,serif;color:var(--mute);margin-top:28px}
+</style>
+</head>
+<body>
+<svg class="mozzie" viewBox="0 0 600 800" aria-hidden="true">
+<defs><g id="half">
+<path d="M296 150 C285 120 268 95 248 68"/>
+<path class="fine" d="M288 128 l-8 -3 M281 116 l-8 -2 M273 104 l-8 -2 M265 92 l-7 -1 M257 81 l-7 0"/>
+<path d="M297 150 L291 116"/>
+<path d="M266 214 C214 258 162 380 146 528 C176 524 222 410 274 242 Z"/>
+<path class="fine" d="M266 222 C230 290 190 400 156 516 M270 232 C238 302 205 410 172 520 M263 252 C232 322 200 420 190 500"/>
+<path d="M274 206 L214 168 L166 92"/><path class="band" d="M166 92 L136 18"/>
+<path d="M262 238 L170 244 L92 292"/><path class="band" d="M92 292 L34 372"/>
+<path d="M274 272 L214 330 L160 478"/><path class="band" d="M160 478 L128 650 L118 784"/>
+<path d="M286 172 a14 14 0 0 1 6 -18"/>
+</g></defs>
+<use href="#half"/><use href="#half" transform="translate(600 0) scale(-1 1)"/>
+<path d="M300 150 L300 34"/>
+<circle cx="300" cy="166" r="16"/>
+<ellipse cx="300" cy="232" rx="40" ry="50"/>
+<path class="fine" d="M286 198 C268 220 272 248 290 266 M314 198 C332 220 328 248 310 266 M297 204 V258 M303 204 V258"/>
+<path d="M276 278 Q300 292 324 278"/>
+<path d="M283 290 C268 380 276 480 296 562 L304 562 C324 480 332 380 317 290 Z"/>
+<path class="fine" d="M276 322 Q300 330 324 322 M274 354 Q300 362 326 354 M274 386 Q300 394 326 386 M275 418 Q300 426 325 418 M278 450 Q300 457 322 450 M282 482 Q300 488 318 482 M287 514 Q300 519 313 514 M292 542 Q300 546 308 542"/>
+</svg>
+<div class="wrap">
+<h1>Mosquito Sound Board</h1>
+<p class="species">Synthetic wingbeats of <em>Aedes aegypti</em>, to play to the Duet Jammer</p>
+<div class="rule"></div>
+<p class="lede">Open this on a second device, set the same temperature as the jammer, and play a sound toward the phone running the Duet Jammer.</p>
+
+<section class="scope" aria-label="Now playing">
+  <div class="now" id="nowBox"><span class="dot" aria-hidden="true"></span><span id="now">Nothing playing</span></div>
+  <p class="sub" id="nowSub">Tap a sound below to start.</p>
+  <div class="fig"><canvas id="cv" aria-label="Spectrum of the sound playing, 0 to 1800 hertz"></canvas></div>
+  <div class="legend"><span><i style="background:var(--pink)"></i>Female tone</span><span><i style="background:var(--teal)"></i>Male tone</span><span><i style="background:var(--gold)"></i>Shared harmonic</span></div>
+  <div class="prog" id="prog"><b id="progb"></b></div>
+</section>
+
+<div class="two">
+<section class="panel">
+  <div class="lab">Air temperature (match the Duet Jammer's slider)</div>
+  <input type="range" id="temp" min="20" max="36" step="0.5" aria-label="Air temperature">
+  <div class="tval" id="tval"></div>
+</section>
+<section class="panel">
+  <div class="lab">Volume</div>
+  <input type="range" id="vol" min="0" max="1" step="0.05" aria-label="Volume">
+  <button class="stopall" id="stopall">Stop all</button>
+</section>
+</div>
+
+<div class="trays" id="trays"></div>
+
+<section class="panel">
+  <h2>How to use it in the pitch</h2>
+  <ol>
+    <li>On your phone, open the Duet Jammer, choose Microphone, keep the jammer on Auto and press Start.</li>
+    <li>On this device, set the same temperature, turn the volume up, and hold it 20 to 50 cm from the phone.</li>
+    <li>Play <b>Demo sequence</b>. The jammer should show female, then male, then both, and start jamming when the duet begins.</li>
+  </ol>
+  <p class="note">These are computer-generated tones built from published values: female about 400 Hz and male about 600 Hz at 26 °C, matching at a shared harmonic near 1200 Hz (Cator et al., 2009), shifting about 10 Hz per °C. They are not recordings of real mosquitoes. Phone speakers are weak below 500 Hz, so play loudly.</p>
+</section>
+<p class="foot">Background: Aedes aegypti, female, dorsal view.</p>
+</div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const S={temp:28,vol:.8};
+try{const s=JSON.parse(localStorage.getItem('mozzieboard')||'{}');for(const k in s)if(k in S)S[k]=s[k]}catch(e){}
+const save=()=>{try{localStorage.setItem('mozzieboard',JSON.stringify(S))}catch(e){}};
+const fF=()=>400+10*(S.temp-26),fM=()=>1.5*fF(),hz=v=>Math.round(v)+' Hz';
+const SOUNDS=[
+  {id:'demo',name:'Demo sequence',desc:'Quiet, female, male, both out of tune, then the duet. 46 seconds for the whole story.',hz:()=>'46 s, uses all of the above'},
+  {id:'female',name:'Female only',desc:'One female flying. The jammer should hear her but not jam.',hz:()=>'Female '+hz(fF())},
+  {id:'male',name:'Male only',desc:'One male flying. No female, so no mating attempt.',hz:()=>'Male '+hz(fM())},
+  {id:'pair',name:'Both, out of tune',desc:'Female and male present, but their harmonics don’t match yet.',hz:()=>hz(fF())+' and '+hz(fM()*1.08)},
+  {id:'duet',name:'Courtship duet',desc:'The male slides into tune with the female every 9 seconds. This is what triggers jamming.',hz:()=>hz(fF())+' and '+hz(fM())+', meeting at '+hz(3*fF())},
+  {id:'harm',name:'Shared harmonic',desc:'The pairing note on its own: 3 × female = 2 × male.',hz:()=>hz(3*fF())+' pure tone'}
+];
+const DEMO=[['quiet',4,'Quiet'],['female',8,'Female only'],['male',8,'Male only'],['pair',8,'Both, out of tune'],['duet',18,'Courtship duet']];
+let ctx=null,out=null,an=null,buf=null,v=null,current=null,demoT0=0,raf=0,lastWob=0;
+
+$('trays').innerHTML=SOUNDS.map(s=>`<article class="tray" id="t-${s.id}"><h3>${s.name}</h3><p>${s.desc}</p><div class="hz" id="hz-${s.id}">${s.hz()}</div><button class="play" data-id="${s.id}" aria-pressed="false">Play</button></article>`).join('');
+
+function ensure(){
+  if(ctx)return;
+  const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();
+  out=ctx.createGain();out.gain.value=S.vol;
+  an=ctx.createAnalyser();an.fftSize=8192;an.smoothingTimeConstant=.6;buf=new Float32Array(an.frequencyBinCount);
+  out.connect(an);out.connect(ctx.destination);
+  const a=[0,1,.55,.4,.22,.12],re=new Float32Array(a.length),im=new Float32Array(a.length);a.forEach((x,i)=>im[i]=x);
+  const wave=ctx.createPeriodicWave(re,im);
+  const nb=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const ns=ctx.createBufferSource();ns.buffer=nb;ns.loop=true;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2500;
+  const nG=ctx.createGain();nG.gain.value=0;ns.connect(lp).connect(nG).connect(out);ns.start();
+  const mk=(type)=>{const o=ctx.createOscillator();if(type)o.type=type;else o.setPeriodicWave(wave);const g=ctx.createGain();g.gain.value=0;o.connect(g).connect(out);o.start();return{o,g}};
+  v={fem:mk(),mal:mk(),harm:mk('sine'),nG,court:0};
+  if(!raf)frame();
+}
+
+function voice(kind){
+  const t=ctx.currentTime,F=fF(),M=fM();
+  const on={female:[.22,0,0],male:[0,.16,0],pair:[.22,.16,0],duet:[.22,.16,0],harm:[0,0,.3],quiet:[0,0,0]}[kind]||[0,0,0];
+  v.fem.g.gain.setTargetAtTime(on[0],t,.06);v.mal.g.gain.setTargetAtTime(on[1],t,.06);v.harm.g.gain.setTargetAtTime(on[2],t,.06);
+  v.nG.gain.setTargetAtTime(kind==='harm'?.012:.025,t,.06);
+  v.fem.o.frequency.setTargetAtTime(F,t,.05);v.harm.o.frequency.setTargetAtTime(3*F,t,.05);
+  v.mal.o.frequency.cancelScheduledValues(t);
+  if(kind==='duet'){v.mal.o.frequency.setValueAtTime(M*1.08,t);v.mal.o.frequency.setTargetAtTime(M,t+.6,.6);v.court=t}
+  else v.mal.o.frequency.setTargetAtTime(kind==='pair'?M*1.08:M,t,.05);
+  v.kind=kind;
+}
+function silence(){if(!v)return;const t=ctx.currentTime;[v.fem,v.mal,v.harm].forEach(x=>x.g.gain.setTargetAtTime(0,t,.05));v.nG.gain.setTargetAtTime(0,t,.05);v.kind=null}
+
+function wobble(){
+  if(!v||!v.kind)return;const t=ctx.currentTime;if(t-lastWob<.25)return;lastWob=t;
+  const r=()=>(Math.random()-.5)*4,F=fF(),M=fM();
+  v.fem.o.frequency.setTargetAtTime(F+r(),t,.12);v.harm.o.frequency.setTargetAtTime(3*F+r()*.5,t,.12);
+  if(v.kind==='duet'){const age=t-v.court;if(age>9){voice('duet');return}if(age>3)v.mal.o.frequency.setTargetAtTime(M+r()*.6,t,.12)}
+  else v.mal.o.frequency.setTargetAtTime((v.kind==='pair'?M*1.08:M)+r(),t,.12);
+}
+
+function setNow(title,sub,playing){$('now').textContent=title;$('nowSub').textContent=sub;$('nowBox').classList.toggle('playing',playing)}
+function mark(id){document.querySelectorAll('.tray').forEach(el=>{const on=el.id==='t-'+id;el.classList.toggle('on',on);const b=el.querySelector('.play');b.textContent=on?'Stop':'Play';b.setAttribute('aria-pressed',on?'true':'false')})}
+
+async function play(id){
+  ensure();try{await ctx.resume()}catch(e){}
+  current=id;mark(id);$('progb').style.width='0';
+  if(id==='demo'){demoT0=performance.now();v.stage=-1}
+  else{voice(id);const s=SOUNDS.find(x=>x.id===id);setNow(s.name,s.hz(),true)}
+}
+function stop(){current=null;mark(null);silence();$('progb').style.width='0';setNow('Nothing playing','Tap a sound below to start.',false)}
+
+function frame(){
+  raf=requestAnimationFrame(frame);
+  if(current==='demo'){
+    const el=(performance.now()-demoT0)/1000,total=DEMO.reduce((a,s)=>a+s[1],0);
+    let acc=0,i=0;while(i<DEMO.length&&el>=acc+DEMO[i][1]){acc+=DEMO[i][1];i++}
+    if(i>=DEMO.length){stop()}else{
+      if(v.stage!==i){v.stage=i;voice(DEMO[i][0]);}
+      $('progb').style.width=Math.min(100,el/total*100)+'%';
+      setNow('Demo: '+DEMO[i][2],'Part '+(i+1)+' of 5 · '+Math.max(0,Math.ceil(total-el))+' s left',true);
+    }
+  }
+  wobble();draw();
+}
+
+const cv=$('cv'),g=cv.getContext('2d');let W=0,H=0;
+const ro=new ResizeObserver(()=>{const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=Math.round(W*d);cv.height=Math.round(H*d);g.setTransform(d,0,0,d,0,0);draw()});ro.observe(cv);
+function draw(){
+  if(!W)return;
+  const FMAX=1800,ph=H-24,x=f=>f/FMAX*W,F=fF(),M=fM();
+  g.clearRect(0,0,W,H);
+  g.font='13px "IBM Plex Sans",system-ui,sans-serif';g.textAlign='center';g.fillStyle='#a3a1aa';g.strokeStyle='rgba(163,161,170,.18)';g.lineWidth=1;
+  for(const f of[500,1000,1500]){g.beginPath();g.moveTo(x(f),0);g.lineTo(x(f),ph);g.stroke();g.fillText(W<420?(f/1000)+'k':f+' Hz',x(f),H-6)}
+  const mk=(f,col)=>{g.strokeStyle=col;g.lineWidth=1.5;g.setLineDash([5,5]);g.beginPath();g.moveTo(x(f),0);g.lineTo(x(f),ph);g.stroke();g.setLineDash([])};
+  mk(F,'rgba(228,106,136,.7)');mk(M,'rgba(98,182,178,.7)');mk(3*F,'rgba(216,178,94,.8)');
+  if(an&&current){
+    an.getFloatFrequencyData(buf);const bh=ctx.sampleRate/an.fftSize,n=Math.min(buf.length,Math.ceil(FMAX/bh));
+    const y=val=>ph-Math.max(0,Math.min(1,(val+115)/95))*ph*.94;
+    g.beginPath();g.moveTo(0,ph);for(let i=1;i<n;i++)g.lineTo(x(i*bh),y(buf[i]));g.lineTo(W,ph);g.closePath();
+    g.fillStyle='rgba(236,235,230,.10)';g.fill();g.strokeStyle='#ecebe6';g.lineWidth=1.1;g.stroke();
+  }else{g.fillStyle='#a3a1aa';g.font='15px "IBM Plex Sans",system-ui,sans-serif';g.fillText('Spectrum appears while a sound plays',W/2,ph/2)}
+}
+
+function tv(){const F=fF();$('tval').innerHTML='<b>'+S.temp.toFixed(1)+' °C</b> → female '+hz(F)+' · male '+hz(1.5*F)+' · harmonic '+hz(3*F);SOUNDS.forEach(s=>$('hz-'+s.id).textContent=s.hz())}
+const temp=$('temp');temp.value=S.temp;tv();
+temp.addEventListener('input',()=>{S.temp=+temp.value;save();tv();if(v&&v.kind){const t=ctx.currentTime;v.fem.o.frequency.setTargetAtTime(fF(),t,.2);v.harm.o.frequency.setTargetAtTime(3*fF(),t,.2);if(v.kind!=='duet')v.mal.o.frequency.setTargetAtTime(v.kind==='pair'?fM()*1.08:fM(),t,.2)}
+  if(current&&current!=='demo'){const s=SOUNDS.find(x=>x.id===current);$('nowSub').textContent=s.hz()}});
+const vol=$('vol');vol.value=S.vol;
+vol.addEventListener('input',()=>{S.vol=+vol.value;save();if(out)out.gain.setTargetAtTime(S.vol,ctx.currentTime,.05)});
+$('trays').addEventListener('click',e=>{const b=e.target.closest('.play');if(!b)return;const id=b.dataset.id;if(current===id)stop();else play(id)});
+$('stopall').addEventListener('click',stop);
+}
+</script>
+</body>
+</html>

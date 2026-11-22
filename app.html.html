@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aedes duet jammer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: quiet and exact, like a museum specimen label
+   IDEA: a natural-history plate of Aedes aegypti with a working instrument laid on it
+   PICTURE: a fine-line engraved mosquito behind the page; the live spectrum is the working picture
+   COLOUR and TYPE: warm white or night ink, one blood-crimson accent; Cormorant Garamond titles, IBM Plex Sans text
+   LAYOUT: title and species line, scope, readouts, controls, then method and parts */
+:root{color-scheme:light dark;--bg:light-dark(#f3f2ee,#111015);--ink:light-dark(#17161b,#ecebe6);--mute:light-dark(#605e67,#a3a1aa);--line:light-dark(#d8d5ce,#2d2b34);--card:light-dark(rgba(250,249,246,.86),rgba(24,22,29,.84));--acc:light-dark(#17161b,#ecebe6);--onacc:light-dark(#f3f2ee,#111015);--crim:light-dark(#a3142f,#e0526f);--panel:#16141b;--pink:#e46a88;--teal:#62b6b2;--gold:#d8b25e;--coral:#e8875a;--pi:#ecebe6;--pm:#a3a1aa}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
+.mozzie{position:fixed;z-index:0;pointer-events:none;top:-2vh;right:-4vw;width:min(56vw,640px);height:auto;color:var(--ink);opacity:.11;transform:rotate(-18deg)}
+@media(max-width:700px){.mozzie{width:96vw;right:-30vw;top:-1vh;opacity:.09}}
+.mozzie *{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.mozzie .fine{stroke-width:.9}.mozzie .band{stroke-dasharray:9 6}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:clamp(22px,4vw,52px) max(4vw,16px) 56px}
+h1{font:600 clamp(40px,7vw,64px)/1 "Cormorant Garamond",Georgia,serif;margin:0;letter-spacing:-.01em}
+.species{font:italic 500 clamp(19px,2.6vw,23px)/1.3 "Cormorant Garamond",Georgia,serif;color:var(--mute);margin:8px 0 14px}
+.species em{color:var(--crim);font-style:italic}
+.rule{height:1px;background:var(--line);margin:0 0 14px;max-width:560px}
+.lede{color:var(--mute);margin:0 0 26px;max-width:58ch;font-size:15px}
+h2{font:600 24px/1.2 "Cormorant Garamond",Georgia,serif;margin:0 0 12px}
+.grid{display:grid;gap:18px}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1fr) 350px;align-items:start}}
+.scope{background:var(--panel);color:var(--pi);border:1px solid #2a2732;border-radius:14px;padding:18px}
+.state{display:flex;gap:12px;align-items:center;font:600 clamp(22px,4.4vw,30px)/1.15 "Cormorant Garamond",Georgia,serif;min-height:2.3em}
+.dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--pm)}
+[data-s=duet] .dot{background:var(--gold)}[data-s=jam] .dot{background:var(--coral)}[data-s=female] .dot{background:var(--pink)}[data-s=male] .dot{background:var(--teal)}[data-s=both] .dot{background:linear-gradient(90deg,var(--pink) 50%,var(--teal) 50%)}
+@media(prefers-reduced-motion:no-preference){[data-s=jam] .dot{animation:p .5s ease-in-out infinite alternate}@keyframes p{to{transform:scale(1.6);opacity:.55}}}
+.sub{color:var(--pm);font-size:14px;margin:2px 0 10px}
+.fig{position:relative;height:260px;margin:4px -4px 0}
+@media(min-width:700px){.fig{height:330px}}
+.fig>canvas{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--pm);margin:10px 0 14px}
+.legend i{display:inline-block;width:14px;height:2px;vertical-align:4px;margin-right:7px}
+.cyc{height:2px;background:#2e2b37;margin-bottom:8px}.cyc b{display:block;height:100%;width:0;background:var(--teal)}
+.cyc.jam b{background:var(--coral)}
+.cycl{font-size:13px;color:var(--pm);margin-bottom:14px}
+.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));border-top:1px solid #2e2b37}
+.read{padding:12px 12px 4px 0}
+.read span{display:block;font-size:13px;color:var(--pm)}
+.read strong{font:500 24px/1.2 "IBM Plex Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tally{font-size:13px;color:var(--pm);margin-top:10px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;backdrop-filter:blur(2px)}
+.panel+.panel{margin-top:14px}.logp{margin-top:18px}
+@media(max-width:899px){.leftcol{display:contents}.logp{order:3;margin-top:0}}
+.lab{font-size:13px;color:var(--mute);margin:16px 0 7px}.panel>.lab:first-child{margin-top:0}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button,.btn{font:inherit;font-size:15px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--onacc)}
+button:focus-visible,input:focus-visible,label.btn:focus-within,summary:focus-visible{outline:2px solid var(--crim);outline-offset:2px}
+.go{width:100%;font:inherit;font-size:17px;font-weight:500;min-height:52px;border:0;border-radius:999px;background:var(--acc);color:var(--onacc);cursor:pointer;margin-top:18px}
+.go[aria-pressed=true]{background:var(--crim);color:#fff}
+input[type=range]{width:100%;accent-color:var(--crim);height:32px}
+.tval{font-size:14px;font-variant-numeric:tabular-nums;color:var(--mute)}
+.tval b{font:600 22px "Cormorant Garamond",Georgia,serif;color:var(--ink)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;margin-top:8px}
+.row input[type=checkbox]{width:20px;height:20px;accent-color:var(--crim)}
+.adv{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-bottom:4px}
+.adv label{font-size:13px;color:var(--mute)}
+.adv input{width:100%;font:inherit;font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+details{margin-top:10px;border-top:1px solid var(--line)}
+details summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:14px;color:var(--mute)}
+.file{display:inline-flex;align-items:center;position:relative}.file input{position:absolute;opacity:0;width:1px;height:1px}
+.fname{font-size:14px;color:var(--mute);margin-top:6px}
+.note{font-size:14px;color:var(--mute)}
+#log{list-style:none;margin:0;padding:0;font-size:14px;max-height:220px;overflow:auto}
+#log li{padding:7px 0;border-top:1px solid var(--line)}
+#log time{color:var(--mute);font-variant-numeric:tabular-nums;margin-right:8px}
+.below{display:grid;gap:18px;margin-top:22px}
+@media(min-width:900px){.below{grid-template-columns:1fr 1fr}}
+ol.steps{margin:0 0 12px;padding-left:1.3em}ol.steps li{margin:7px 0}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:13px;color:var(--mute);font-weight:400}
+.foot{font:italic 16px "Cormorant Garamond",Georgia,serif;color:var(--mute);margin-top:28px}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mute)}.stack td:empty{display:none}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<svg class="mozzie" viewBox="0 0 600 800" aria-hidden="true">
+<defs><g id="half">
+<path d="M296 150 C285 120 268 95 248 68"/>
+<path class="fine" d="M288 128 l-8 -3 M281 116 l-8 -2 M273 104 l-8 -2 M265 92 l-7 -1 M257 81 l-7 0"/>
+<path d="M297 150 L291 116"/>
+<path d="M266 214 C214 258 162 380 146 528 C176 524 222 410 274 242 Z"/>
+<path class="fine" d="M266 222 C230 290 190 400 156 516 M270 232 C238 302 205 410 172 520 M263 252 C232 322 200 420 190 500"/>
+<path d="M274 206 L214 168 L166 92"/><path class="band" d="M166 92 L136 18"/>
+<path d="M262 238 L170 244 L92 292"/><path class="band" d="M92 292 L34 372"/>
+<path d="M274 272 L214 330 L160 478"/><path class="band" d="M160 478 L128 650 L118 784"/>
+<path d="M286 172 a14 14 0 0 1 6 -18"/>
+</g></defs>
+<use href="#half"/><use href="#half" transform="translate(600 0) scale(-1 1)"/>
+<path d="M300 150 L300 34"/>
+<circle cx="300" cy="166" r="16"/>
+<ellipse cx="300" cy="232" rx="40" ry="50"/>
+<path class="fine" d="M286 198 C268 220 272 248 290 266 M314 198 C332 220 328 248 310 266 M297 204 V258 M303 204 V258"/>
+<path d="M276 278 Q300 292 324 278"/>
+<path d="M283 290 C268 380 276 480 296 562 L304 562 C324 480 332 380 317 290 Z"/>
+<path class="fine" d="M276 322 Q300 330 324 322 M274 354 Q300 362 326 354 M274 386 Q300 394 326 386 M275 418 Q300 426 325 418 M278 450 Q300 457 322 450 M282 482 Q300 488 318 482 M287 514 Q300 519 313 514 M292 542 Q300 546 308 542"/>
+</svg>
+<div class="wrap">
+<h1>Duet Jammer</h1>
+<p class="species">An acoustic mating disruptor for <em>Aedes aegypti</em>, the dengue mosquito</p>
+<div class="rule"></div>
+<p class="lede">Phone prototype of the ESP32 device. It listens for the courtship duet between a female and a male, then masks the shared harmonic they use to pair up.</p>
+
+<div class="grid">
+<div class="leftcol">
+<section class="scope" aria-label="Live analyzer">
+  <div class="state" id="stateBox" data-s="idle"><span class="dot" aria-hidden="true"></span><span id="state">Ready. Press Start.</span></div>
+  <p class="sub" id="stateSub">Simulation mode plays synthetic wingbeats, so no mosquitoes are needed.</p>
+  <div class="fig"><canvas id="scope" aria-label="Frequency spectrum from 0 to 1800 hertz"></canvas></div>
+  <div class="legend"><span><i style="background:var(--pink)"></i>Female band</span><span><i style="background:var(--teal)"></i>Male band</span><span><i style="background:var(--gold)"></i>Duet harmonic, 3 × female</span><span><i style="background:var(--coral)"></i>Jamming</span></div>
+  <div class="cyc" id="cyc"><b id="cycb"></b></div>
+  <div class="cycl" id="cycl">Cycle: idle</div>
+  <div class="reads">
+    <div class="read"><span>Female peak</span><strong id="rF">—</strong></div>
+    <div class="read"><span>Male peak</span><strong id="rM">—</strong></div>
+    <div class="read"><span>Duet target</span><strong id="rT">—</strong></div>
+    <div class="read"><span>Harmonic gap</span><strong id="rG">—</strong></div>
+  </div>
+  <div class="tally" id="tally">Duets detected: 0 · Jam bursts: 0</div>
+</section>
+<section class="panel logp" aria-label="Event log">
+  <h2>Event log</h2>
+  <p class="note" id="logEmpty">Events appear here once you press Start.</p>
+  <ul id="log"></ul>
+</section>
+</div>
+
+<div>
+<section class="panel" aria-label="Controls">
+  <div class="lab">Sound source</div>
+  <div class="seg" id="srcSeg">
+    <button data-v="sim">Simulation</button><button data-v="file">Audio file</button><button data-v="mic">Microphone</button>
+  </div>
+  <div id="simBox">
+    <div class="lab">Simulated mosquitoes</div>
+    <div class="seg" id="scSeg">
+      <button data-v="none">Quiet</button><button data-v="female">Female only</button><button data-v="male">Male only</button><button data-v="duet">Courtship duet</button>
+    </div>
+  </div>
+  <div id="fileBox" hidden>
+    <div class="lab">Recording to analyze</div>
+    <label class="btn file">Choose or record audio<input type="file" id="file" accept="audio/*"></label>
+    <div class="fname" id="fname">No file yet. MP3, M4A or WAV work.</div>
+  </div>
+  <div id="micBox" hidden><p class="note">Live mode: the phone listens through its mic and jams through its speaker. Needs the page opened in Chrome or Safari from an https:// link (the Claude viewer blocks the mic). For a live demo, play Simulation → Courtship duet aloud on a second device with Jammer off, and point this phone at it.</p></div>
+
+  <div class="lab">Air temperature (the ESP32 reads this from its DS18B20)</div>
+  <input type="range" id="temp" min="20" max="36" step="0.5" aria-label="Air temperature">
+  <div class="tval" id="tval"></div>
+
+  <div class="lab">Jammer</div>
+  <div class="seg" id="jamSeg"><button data-v="auto">Auto, on duet</button><button data-v="off">Off (detect only)</button></div>
+
+  <div class="row"><label for="hear">Play simulation or file aloud</label><input type="checkbox" id="hear"></div>
+  <div class="lab">Volume</div>
+  <input type="range" id="vol" min="0" max="1" step="0.05" aria-label="Volume">
+
+  <button class="go" id="go" aria-pressed="false">Start</button>
+
+  <details>
+    <summary>Advanced settings</summary>
+    <div class="adv">
+      <label>Female Hz at 26 °C<input type="number" id="f0" step="5" min="300" max="550"></label>
+      <label>Shift per °C (Hz)<input type="number" id="slope" step="0.5" min="0" max="20"></label>
+      <label>Sensitivity (dB above noise)<input type="number" id="sens" step="1" min="4" max="40"></label>
+      <label>Duet tolerance (Hz)<input type="number" id="tol" step="5" min="5" max="120"></label>
+    </div>
+  </details>
+</section>
+
+
+</div>
+</div>
+
+<div class="below">
+<section class="panel">
+  <h2>What it does, every cycle</h2>
+  <ol class="steps">
+    <li><b>Listen for 1.5 s.</b> The speaker stays silent so the device doesn't hear itself.</li>
+    <li><b>Predict the female tone</b> from air temperature: about 400 Hz at 26 °C, plus 10 Hz per °C.</li>
+    <li><b>Find peaks</b> in the female band and the male band (about 1.5 × female) with an FFT.</li>
+    <li><b>Check for the duet:</b> 3 × female ≈ 2 × male, within the tolerance. That shared harmonic is the pairing signal.</li>
+    <li><b>Jam for 3 s</b> with a rapidly wobbling tone and two side tones around that harmonic, which creates beats that bury it. Then listen again.</li>
+  </ol>
+  <p class="note">Simulated wingbeats are synthetic tones built from published values (female about 400 Hz, male about 600 Hz, duet near 1200 Hz; Cator et al., 2009) and a 10 Hz/°C shift (published range 8–13). The simulated mosquitoes don't react to the jamming, so this demo shows detection and masking, not proof that mating drops.</p>
+</section>
+<section class="panel">
+  <h2>Phone app vs ESP32 prototype</h2>
+  <table class="stack">
+    <thead><tr><th>Job</th><th>In this app</th><th>On the ESP32</th></tr></thead>
+    <tbody>
+      <tr><td>Hear wingbeats</td><td>Phone mic or audio file</td><td>INMP441 I2S microphone</td></tr>
+      <tr><td>Know temperature</td><td>Slider (phones lack an air sensor)</td><td>DS18B20 sensor</td></tr>
+      <tr><td>Analyze sound</td><td>Web Audio 8192-point FFT</td><td>ESP32 FFT</td></tr>
+      <tr><td>Play jamming tones</td><td>Phone speaker</td><td>PAM8403 + 3W speaker</td></tr>
+      <tr><td>Power</td><td>Phone battery</td><td>18650 battery + solar panel</td></tr>
+    </tbody>
+  </table>
+</section>
+</div>
+<p class="foot">Background: Aedes aegypti, female, dorsal view, with the lyre mark on the thorax and banded legs.</p>
+</div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const S={source:'sim',scenario:'duet',temp:28,jam:'auto',hear:true,vol:.5,f0:400,T0:26,slope:10,sens:14,tol:30};
+try{const s=JSON.parse(localStorage.getItem('duetjam')||'{}');for(const k in s)if(k in S)S[k]=s[k]}catch(e){}
+const save=()=>{try{localStorage.setItem('duetjam',JSON.stringify(S))}catch(e){}};
+const fF=()=>S.f0+S.slope*(S.temp-S.T0);
+const fM=()=>1.5*fF();
+const LISTEN=1500,JAM=3000,FMAX=1800;
+let ctx=null,an=null,buf=null,hearG=null,sim=null,srcNode=null,mic=null,jam=null,fileBuf=null;
+let running=false,phase='idle',phaseT=0,raf=0,lastUI=0,lastWob=0,lastCls='',nDuet=0,nJam=0;
+let win={n:0,duet:0,female:0,male:0,both:0,none:0,conv:[]};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hz=v=>Math.round(v)+' Hz';
+
+function log(m){const li=document.createElement('li');const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});li.innerHTML='<time>'+t+'</time>'+m;const L=$('log');L.prepend(li);while(L.children.length>40)L.lastChild.remove();$('logEmpty').hidden=true}
+
+function ensureCtx(){
+  if(ctx)return;
+  const AC=window.AudioContext||window.webkitAudioContext;
+  ctx=new AC();
+  an=ctx.createAnalyser();an.fftSize=8192;an.smoothingTimeConstant=.55;an.minDecibels=-120;an.maxDecibels=-10;
+  buf=new Float32Array(an.frequencyBinCount);
+  hearG=ctx.createGain();hearG.gain.value=S.hear?S.vol:0;hearG.connect(ctx.destination);
+  if(!raf)frame();
+}
+
+function wave(){const a=[0,1,.55,.4,.22,.12],re=new Float32Array(a.length),im=new Float32Array(a.length);a.forEach((v,i)=>im[i]=v);return ctx.createPeriodicWave(re,im)}
+
+function buildSim(){
+  const bus=ctx.createGain();bus.connect(an);bus.connect(hearG);
+  const nb=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate),d=nb.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const ns=ctx.createBufferSource();ns.buffer=nb;ns.loop=true;
+  const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2500;
+  const ng=ctx.createGain();ng.gain.value=.03;ns.connect(lp).connect(ng).connect(bus);ns.start();
+  const w=wave();
+  const mk=()=>{const o=ctx.createOscillator();o.setPeriodicWave(w);const g=ctx.createGain();g.gain.value=0;o.connect(g).connect(bus);o.start();return{o,g}};
+  sim={bus,ns,fem:mk(),mal:mk(),court:ctx.currentTime};
+  applyScenario();
+}
+
+function applyScenario(){
+  if(!sim)return;
+  const t=ctx.currentTime,sc=S.scenario,{fem,mal}=sim;
+  const fOn=sc==='female'||sc==='duet',mOn=sc==='male'||sc==='duet';
+  fem.g.gain.setTargetAtTime(fOn?.22:0,t,.05);
+  mal.g.gain.setTargetAtTime(mOn?.16:0,t,.05);
+  fem.o.frequency.setTargetAtTime(fF(),t,.05);
+  mal.o.frequency.cancelScheduledValues(t);
+  if(sc==='duet'){mal.o.frequency.setValueAtTime(fM()*1.08,t);mal.o.frequency.setTargetAtTime(fM(),t+.4,.5);sim.court=t}
+  else mal.o.frequency.setTargetAtTime(fM(),t,.05);
+}
+
+function simWobble(){
+  if(!sim)return;
+  const t=ctx.currentTime;if(t-lastWob<.25)return;lastWob=t;
+  const r=()=>(Math.random()-.5)*4,{fem,mal}=sim;
+  fem.o.frequency.setTargetAtTime(fF()+r(),t,.12);
+  if(S.scenario==='duet'){const age=t-sim.court;if(age>9){applyScenario();return}if(age>2.6)mal.o.frequency.setTargetAtTime(fM()+r()*.6,t,.12)}
+  else mal.o.frequency.setTargetAtTime(fM()+r(),t,.12);
+}
+
+async function buildFile(){
+  if(!fileBuf){log('Choose an audio file first.');return false}
+  const s=ctx.createBufferSource();s.buffer=fileBuf;s.loop=true;s.connect(an);s.connect(hearG);s.start();srcNode=s;return true;
+}
+
+async function buildMic(){
+  try{
+    mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    srcNode=ctx.createMediaStreamSource(mic);srcNode.connect(an);return true;
+  }catch(e){log(!window.isSecureContext?'The microphone needs this page opened from an https:// link.':(e&&e.name==='NotAllowedError'?'Microphone permission was blocked. Allow it in your browser settings, or use Audio file.':'Microphone isn\'t available here. Use Simulation, or record a clip and use Audio file.'));return false}
+}
+
+function stopSource(){
+  if(sim){[sim.ns,sim.fem.o,sim.mal.o].forEach(o=>{try{o.stop()}catch(e){}});sim.bus.disconnect();sim=null}
+  if(srcNode){try{if(srcNode.stop)srcNode.stop()}catch(e){}srcNode.disconnect();srcNode=null}
+  if(mic){mic.getTracks().forEach(t=>t.stop());mic=null}
+}
+
+function jamStart(fc){
+  const t=ctx.currentTime;
+  const mix=ctx.createGain();mix.gain.value=.22;
+  const spk=ctx.createGain();spk.gain.value=0;mix.connect(spk);spk.connect(ctx.destination);spk.gain.setTargetAtTime(S.vol,t,.05);
+  let toAn=null;
+  if(S.source!=='mic'){toAn=ctx.createGain();toAn.gain.value=0;mix.connect(toAn);toAn.connect(an);toAn.gain.setTargetAtTime(1,t,.05)}
+  const c=ctx.createOscillator();c.frequency.value=fc;
+  const lfo=ctx.createOscillator();lfo.frequency.value=17;const lg=ctx.createGain();lg.gain.value=28;lfo.connect(lg).connect(c.frequency);
+  const sides=[fc-22,fc+22].map(f=>{const o=ctx.createOscillator();o.frequency.value=f;return o});
+  c.connect(mix);sides.forEach(o=>o.connect(mix));
+  const oscs=[c,lfo,...sides];oscs.forEach(o=>o.start());
+  jam={mix,spk,toAn,oscs,fc};
+}
+function jamStop(){
+  if(!jam||!ctx)return;
+  const j=jam;jam=null;const t=ctx.currentTime;
+  j.spk.gain.setTargetAtTime(0,t,.04);if(j.toAn)j.toAn.gain.setTargetAtTime(0,t,.04);
+  setTimeout(()=>{j.oscs.forEach(o=>{try{o.stop()}catch(e){}});j.mix.disconnect();j.spk.disconnect();if(j.toAn)j.toAn.disconnect()},250);
+}
+
+function detect(){
+  const bh=ctx.sampleRate/an.fftSize,b=f=>Math.max(1,Math.min(buf.length-2,Math.round(f/bh)));
+  const tmp=[];for(let i=b(250);i<b(FMAX);i+=3)tmp.push(buf[i]);tmp.sort((x,y)=>x-y);
+  let floor=tmp[tmp.length>>1];if(!isFinite(floor))floor=-120;
+  const pk=(f1,f2)=>{let bi=b(f1),bv=-Infinity;for(let i=b(f1);i<=b(f2);i++)if(buf[i]>bv){bv=buf[i];bi=i}
+    const a=buf[bi-1],c=buf[bi+1];let p=(a-c)/(2*(a-2*bv+c));if(!isFinite(p))p=0;p=Math.max(-.5,Math.min(.5,p));return{f:(bi+p)*bh,db:isFinite(bv)?bv:-120}};
+  const F=fF(),M=fM(),pf=pk(F*.85,F*1.15),pm=pk(M*.85,M*1.15);
+  const fOn=pf.db-floor>S.sens,mOn=pm.db-floor>S.sens,gap=Math.abs(3*pf.f-2*pm.f);
+  let cls='none';if(fOn&&mOn)cls=gap<=S.tol?'duet':'both';else if(fOn)cls='female';else if(mOn)cls='male';
+  return{cls,pf,pm,fOn,mOn,gap,fc:(3*pf.f+2*pm.f)/2};
+}
+
+const TXT={none:['Listening: no mosquito tones','Nothing in the female or male band.'],female:['Female tone heard','No male yet, so no mating attempt.'],male:['Male tone heard','No female yet, so no mating attempt.'],both:['Female and male present','Tones not yet matched, so no duet.'],duet:['Courtship duet detected','3 × female matches 2 × male: they are pairing up.']};
+function setState(s,main,sub){$('stateBox').dataset.s=s;$('state').textContent=main;$('stateSub').textContent=sub}
+
+function majority(){const n=Math.max(1,win.n);let best='none',bv=0;for(const k of['duet','both','female','male'])if(win[k]/n>=.4&&win[k]>bv){best=k;bv=win[k]}return best}
+function resetWin(){win={n:0,duet:0,female:0,male:0,both:0,none:0,conv:[]}}
+const median=a=>{const s=[...a].sort((x,y)=>x-y);return s[s.length>>1]||0};
+
+function frame(){
+  raf=requestAnimationFrame(frame);
+  if(!an)return;
+  an.getFloatFrequencyData(buf);
+  const now=performance.now(),det=detect();
+  draw(det);
+  if(!running)return;
+  if(S.source==='sim')simWobble();
+  const el=now-phaseT;
+  if(phase==='listen'){
+    win.n++;win[det.cls]++;if(det.cls==='duet')win.conv.push(det.fc);
+    bar(el/LISTEN,false,'Listening window, '+((LISTEN-el)/1000).toFixed(1)+' s left');
+    if(now-lastUI>150){lastUI=now;setState(det.cls,TXT[det.cls][0],TXT[det.cls][1]);reads(det)}
+    if(el>=LISTEN){
+      const m=majority();
+      if(m==='duet'){
+        nDuet++;const fc=median(win.conv);
+        if(S.jam==='auto'){nJam++;log('Duet at <b>'+hz(fc)+'</b>. Jamming for 3 s.');jamStart(fc);phase='jam';phaseT=now;resetWin();tally();lastCls='duet';return}
+        if(lastCls!=='duet')log('Duet at <b>'+hz(fc)+'</b>. Jammer is off.');
+      }else if(m!==lastCls){log(TXT[m][0]+'.')}
+      lastCls=m;tally();resetWin();phaseT=now;
+    }
+  }else if(phase==='jam'){
+    bar(el/JAM,true,'Jamming window, '+((JAM-el)/1000).toFixed(1)+' s left');
+    if(now-lastUI>150){lastUI=now;setState('jam','Jamming around '+hz(jam?jam.fc:0),'Wobbling tones and beats cover the duet harmonic. Listening pauses until the window ends.')}
+    if(el>=JAM){jamStop();phase='listen';phaseT=now;resetWin();lastCls='';log('Jam window ended. Listening again.')}
+  }
+}
+
+function bar(p,isJam,txt){$('cyc').classList.toggle('jam',isJam);$('cycb').style.width=Math.min(100,p*100)+'%';$('cycl').textContent='Cycle: '+txt}
+function reads(det){
+  $('rF').textContent=det.fOn?hz(det.pf.f):'—';$('rM').textContent=det.mOn?hz(det.pm.f):'—';
+  $('rT').textContent=hz(3*fF());$('rG').textContent=det.fOn&&det.mOn?hz(det.gap):'—';
+}
+function tally(){$('tally').textContent='Duets detected: '+nDuet+' · Jam bursts: '+nJam}
+
+const cv=$('scope'),g=cv.getContext('2d');let W=0,H=0;
+const ro=new ResizeObserver(()=>{const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;W=r.width;H=r.height;cv.width=Math.round(W*d);cv.height=Math.round(H*d);g.setTransform(d,0,0,d,0,0);if(!an)draw(null)});
+ro.observe(cv);
+
+function draw(det){
+  if(!W)return;
+  const ph=H-24,x=f=>f/FMAX*W,F=fF(),M=fM();
+  g.clearRect(0,0,W,H);
+  const band=(a,b,col)=>{g.fillStyle=col;g.fillRect(x(a),0,x(b)-x(a),ph)};
+  band(F*.85,F*1.15,'rgba(228,106,136,.14)');band(M*.85,M*1.15,'rgba(98,182,178,.14)');
+  if(jam)band(jam.fc-60,jam.fc+60,'rgba(232,135,90,.30)');
+  g.strokeStyle='rgba(163,161,170,.18)';g.lineWidth=1;g.font='13px "IBM Plex Sans",system-ui,sans-serif';g.fillStyle='#a3a1aa';g.textAlign='center';
+  for(const f of[500,1000,1500]){g.beginPath();g.moveTo(x(f),0);g.lineTo(x(f),ph);g.stroke();g.fillText(W<420?(f/1000)+'k':f+' Hz',x(f),H-6)}
+  g.strokeStyle='#d8b25e';g.lineWidth=1.5;g.setLineDash([5,5]);g.beginPath();g.moveTo(x(3*F),0);g.lineTo(x(3*F),ph);g.stroke();g.setLineDash([]);
+  if(an&&det){
+    const bh=ctx.sampleRate/an.fftSize,n=Math.min(buf.length,Math.ceil(FMAX/bh));
+    const y=v=>ph-Math.max(0,Math.min(1,(v+115)/95))*ph*.94;
+    g.beginPath();g.moveTo(0,ph);for(let i=1;i<n;i++)g.lineTo(x(i*bh),y(buf[i]));g.lineTo(W,ph);g.closePath();
+    g.fillStyle='rgba(236,235,230,.10)';g.fill();g.strokeStyle='#ecebe6';g.lineWidth=1.1;g.stroke();
+    const dot=(p,col)=>{g.fillStyle=col;g.beginPath();g.arc(x(p.f),y(p.db)-8,4,0,7);g.fill()};
+    if(running&&phase==='listen'){if(det.fOn)dot(det.pf,'#e46a88');if(det.mOn)dot(det.pm,'#62b6b2')}
+  }else{g.fillStyle='#a3a1aa';g.font='15px "IBM Plex Sans",system-ui,sans-serif';g.fillText('Spectrum appears here after Start',W/2,ph/2)}
+}
+
+async function start(){
+  ensureCtx();
+  try{await ctx.resume()}catch(e){}
+  stopSource();jamStop();
+  let ok=true;
+  if(S.source==='sim')buildSim();else if(S.source==='file')ok=await buildFile();else ok=await buildMic();
+  if(!ok){setRunUI(false);return}
+  running=true;phase='listen';phaseT=performance.now();resetWin();lastCls='';
+  setRunUI(true);
+  log('Started. Source: '+{sim:'simulation ('+$('scSeg').querySelector('[aria-pressed=true]').textContent.toLowerCase()+')',file:'audio file',mic:'microphone'}[S.source]+', '+S.temp+' °C.');
+}
+function stop(){
+  running=false;jamStop();stopSource();phase='idle';setRunUI(false);
+  setState('idle','Stopped. Press Start.','Settings are kept.');bar(0,false,'idle');log('Stopped.');
+}
+function setRunUI(on){$('go').textContent=on?'Stop':'Start';$('go').setAttribute('aria-pressed',on?'true':'false')}
+
+function seg(id,key,after){
+  const el=$(id),set=()=>el.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S[key]?'true':'false'));
+  set();el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S[key]=b.dataset.v;save();set();if(after)after()});
+}
+function showSrc(){$('simBox').hidden=S.source!=='sim';$('fileBox').hidden=S.source!=='file';$('micBox').hidden=S.source!=='mic';
+  $('stateSub').textContent={sim:'Simulation mode plays synthetic wingbeats, so no mosquitoes are needed.',file:'Analyzes a recording, for example a mosquito clip from your phone.',mic:'Listens live through the phone microphone.'}[S.source]}
+seg('srcSeg','source',()=>{showSrc();if(running)start()});
+seg('scSeg','scenario',()=>{if(running&&sim){applyScenario();log('Scenario: '+$('scSeg').querySelector('[aria-pressed=true]').textContent+'.')}});
+seg('jamSeg','jam',()=>{if(S.jam==='off')jamStop();if(phase==='jam'&&S.jam==='off'){phase='listen';phaseT=performance.now();resetWin()}log(S.jam==='auto'?'Jammer set to auto.':'Jammer off: detect only.')});
+showSrc();
+
+function tv(){const F=fF();$('tval').innerHTML='<b>'+S.temp.toFixed(1)+' °C</b> → female ≈ '+hz(F)+' · male ≈ '+hz(1.5*F)+' · duet ≈ '+hz(3*F)}
+const temp=$('temp');temp.value=S.temp;tv();
+temp.addEventListener('input',()=>{S.temp=+temp.value;tv();save();if(sim){const t=ctx.currentTime;sim.fem.o.frequency.setTargetAtTime(fF(),t,.2);if(S.scenario!=='duet'||t-sim.court>2.6)sim.mal.o.frequency.setTargetAtTime(fM(),t,.2)}});
+temp.addEventListener('change',()=>{if(running)log('Temperature '+S.temp.toFixed(1)+' °C. Target moved to '+hz(3*fF())+'.')});
+
+const hear=$('hear');hear.checked=S.hear;
+hear.addEventListener('change',()=>{S.hear=hear.checked;save();if(hearG)hearG.gain.setTargetAtTime(S.hear?S.vol:0,ctx.currentTime,.05)});
+const vol=$('vol');vol.value=S.vol;
+vol.addEventListener('input',()=>{S.vol=+vol.value;save();if(ctx){const t=ctx.currentTime;if(hearG)hearG.gain.setTargetAtTime(S.hear?S.vol:0,t,.05);if(jam)jam.spk.gain.setTargetAtTime(S.vol,t,.05)}});
+
+for(const k of['f0','slope','sens','tol']){const el=$(k);el.value=S[k];el.addEventListener('change',()=>{const v=parseFloat(el.value);if(isFinite(v)){S[k]=v;save();tv();if(sim)applyScenario()}else el.value=S[k]})}
+
+$('file').addEventListener('change',async e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  ensureCtx();
+  try{const ab=await f.arrayBuffer();fileBuf=await ctx.decodeAudioData(ab);$('fname').textContent=f.name+' · '+fileBuf.duration.toFixed(1)+' s';log('Loaded '+esc(f.name)+'.');if(running&&S.source==='file')start()}
+  catch(err){$('fname').textContent='Could not read that file. Try MP3, M4A or WAV.';log('Could not read that audio file.')}
+});
+
+$('go').addEventListener('click',()=>{running?stop():start()});
+}
+</script>
+</body>
+</html>
